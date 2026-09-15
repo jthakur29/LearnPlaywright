@@ -15,10 +15,12 @@ import org.junit.jupiter.api.Test;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;   
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import com.microsoft.playwright.junit.UsePlaywright;
+import com.microsoft.playwright.options.AriaRole;
 
 @UsePlaywright
 public class TestPlaywrightLocators {
@@ -56,7 +58,7 @@ public class TestPlaywrightLocators {
     }
 
 
-
+ 
 
     @DisplayName("Locating elements by text")
     @Nested
@@ -146,7 +148,40 @@ public class TestPlaywrightLocators {
                 PlaywrightAssertions.assertThat(page.locator("#last_name")).hasValue("Smith");
             }
 
+    }
 
+    @DisplayName("Nested Locators")
+    @Nested 
+    class elementUsingNestedLocators{
+
+        @BeforeEach
+        void openCataloguePage(){
+            openPage();
+        }
+
+        @Test 
+        void locateElementsUsingNestedLocators(){
+
+            page.getByRole(AriaRole.MENUBAR, new Page.GetByRoleOptions().setName("Main Menu")).getByRole(AriaRole.MENUITEM, new Locator.GetByRoleOptions().setName("Contact")).click();
+            Locator contactForm=page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Contact").setLevel(3));
+       PlaywrightAssertions.assertThat(contactForm).isVisible();
+
+        }
+
+        @Test 
+        void locateElementUsingLocalNestedLocators(){
+
+            page.getByRole(AriaRole.MENUBAR, new Page.GetByRoleOptions().setName("Main Menu")).getByText("Contact").click();
+            Locator contactForm=page.locator("h3:has-text('Contact')");
+            PlaywrightAssertions.assertThat(contactForm).isVisible();
+
+        }
+
+        @Test 
+        void locateElementsUsingFilterOptions(){
+            List <String> allProducts=page.getByTestId("product-name").filter(new Locator.FilterOptions().setHasText("Sanders")).allTextContents();
+            Assertions.assertFalse(allProducts.isEmpty());
+        }
     }
 
     
