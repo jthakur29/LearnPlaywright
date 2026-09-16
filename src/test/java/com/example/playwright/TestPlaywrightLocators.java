@@ -19,6 +19,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;   
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.assertions.PlaywrightAssertions;
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import com.microsoft.playwright.junit.UsePlaywright;
 import com.microsoft.playwright.options.AriaRole;
 
@@ -38,6 +39,7 @@ public class TestPlaywrightLocators {
             new BrowserType.LaunchOptions().setHeadless(false)
                 .setArgs(Arrays.asList("--no-sandbox", "--no-extensions"))
         );
+        playwright.selectors().setTestIdAttribute("data-test");
     }
 
     @BeforeEach
@@ -179,9 +181,63 @@ public class TestPlaywrightLocators {
 
         @Test 
         void locateElementsUsingFilterOptions(){
-            List <String> allProducts=page.getByTestId("product-name").filter(new Locator.FilterOptions().setHasText("Sanders")).allTextContents();
+            page.getByPlaceholder("Search").fill("Wrench");
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Search")).click();
+            List <String> allProducts=page.getByTestId("product-name").filter(new Locator.FilterOptions().setHasText("Wrench")).allTextContents();
             Assertions.assertFalse(allProducts.isEmpty());
         }
+
+        @Test 
+        void locateElementWithoutText(){
+            page.getByPlaceholder("Search").fill("Pliers");
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Search")).click();
+            List <String> allProducts=page.getByTestId("product-name").filter(new Locator.FilterOptions().setHasNotText("Drill")).allTextContents();
+            Assertions.assertFalse(allProducts.stream().anyMatch(product ->product.contains("Drill")));
+        }
+
+        @Test 
+        void locateOutOfStockOptions(){
+                page.getByPlaceholder("Search").fill("Pliers");
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Search")).click();
+            List <String> outOfStockList=page.locator(".card").filter(new Locator.FilterOptions().setHas(page.getByTestId("out-of-stock"))).getByTestId("product-name").allTextContents();
+        // PlaywrightAssertions.assertThat(page.getByTestId("out-of-stock")).isVisible();
+
+           boolean found=false;
+            for(String prodcuts: outOfStockList){
+                if(prodcuts.contains("Out of stock")){
+                    found=true;
+                    break;
+                }
+            }
+            Assertions.assertTrue(found);
+        
+        }
+
+
+        @DisplayName("Search For Pliers")
+        @Test 
+        void searchForPliers(){
+            page.getByPlaceholder("Search").fill("Pliers");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Search")).click();
+            assertThat(page.locator(".card")).hasCount(4);
+
+           List <String> productName= page.getByTestId("product-name").allTextContents();
+           Assertions.assertTrue(productName.stream().allMatch(name -> name.contains("Pliers")));
+
+           Locator outOfStockItem=page.locator(".card").filter(new Locator.FilterOptions().setHasText("Out of stock")).getByTestId("product-name");
+
+           assertThat(outOfStockItem).hasCount(1);
+           assertThat(outOfStockItem).hasText("Long Nose Pliers");
+
+        }
+
+        
+
+        }
+
+
+
+
     }
 
     
